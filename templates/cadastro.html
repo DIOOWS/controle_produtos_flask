@@ -1,0 +1,41 @@
+<!-- templates/cadastro.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro de Usuário</title>
+</head>
+<body>
+    <h2>Cadastro</h2>
+    <form id="formCadastro">
+        <input type="text" placeholder="Usuário" id="username" required><br>
+        <input type="password" placeholder="Senha" id="password" required><br>
+        <button type="submit">Cadastrar</button>
+    </form>
+    <p id="mensagem"></p>
+
+    <script>
+        document.getElementById("formCadastro").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            const res = await fetch('/api/cadastro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                document.getElementById("mensagem").innerText = 'Cadastro realizado com sucesso!';
+                // Redireciona para login
+                window.location.href = '/login';
+            } else {
+                document.getElementById("mensagem").innerText = data.error || 'Erro ao cadastrar';
+            }
+        });
+    </script>
+</body>
+</html>
