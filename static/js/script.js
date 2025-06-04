@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
       try {
-        const response = await fetch('/api/logout', { method: 'POST' }); // Corrigido o endpoint
+        const response = await fetch('/api/logout', { method: 'POST' });
         if (!response.ok) throw new Error('Erro ao fazer logout');
         window.location.href = '/login';
       } catch (error) {
@@ -32,11 +32,15 @@ function mostrarProdutos(produtos) {
   tbody.innerHTML = '';
 
   produtos.forEach(produto => {
-    const status = calcularStatus(produto.qtdAtual, produto.qtdMin, produto.qtdMax); // camelCase para bater com backend
+    const status = calcularStatus(produto.qtdAtual, produto.qtdMin, produto.qtdMax);
     const row = `
       <tr data-status="${status}">
         <td>${produto.nome}</td>
-        <td><input type="number" value="${produto.qtdAtual}" onchange="atualizarQuantidade(${produto.id}, this.value)" /></td>
+        <td>
+          <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
+          <input type="number" value="${produto.qtdAtual}" onchange="atualizarQuantidade(${produto.id}, this.value)" />
+          <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
+        </td>
         <td>${produto.qtdMin}</td>
         <td>${produto.qtdMax}</td>
         <td class="status-${status.toLowerCase()}">${status}</td>
@@ -64,7 +68,16 @@ async function adicionarProduto() {
     return;
   }
 
-  // Corrigido para camelCase
+  if (qtdMin > qtdMax) {
+    alert("A quantidade mínima não pode ser maior que a máxima!");
+    return;
+  }
+
+  if (qtdAtual < 0) {
+    alert("A quantidade atual não pode ser negativa!");
+    return;
+  }
+
   const novoProduto = {
     nome,
     qtdAtual,
@@ -90,11 +103,43 @@ async function adicionarProduto() {
 
 async function atualizarQuantidade(id, novaQtd) {
   try {
-    // Corrigido para camelCase
     const response = await fetch(`/api/produtos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ qtdAtual: parseInt(novaQtd) })
+    });
+
+    if (!response.ok) throw new Error('Erro ao atualizar quantidade');
+
+    carregarProdutos();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function alterarQuantidade(id, delta) {
+  try {
+    // Seleciona o input da quantidade atual do produto com o id passado
+    const linhas = document.querySelectorAll('#tabelaProdutos tbody tr');
+    let inputElement = null;
+
+    linhas.forEach(tr => {
+      const deleteIcon = tr.querySelector('.delete-icon');
+      if (deleteIcon && deleteIcon.getAttribute('onclick').includes(`deletarProduto(${id})`)) {
+        inputElement = tr.querySelector('input[type="number"]');
+      }
+    });
+
+    if (!inputElement) throw new Error('Produto não encontrado');
+
+    let novaQtd = parseInt(inputElement.value) + delta;
+    if (isNaN(novaQtd) || novaQtd < 0) novaQtd = 0;
+
+    // Atualiza o backend
+    const response = await fetch(`/api/produtos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ qtdAtual: novaQtd })
     });
 
     if (!response.ok) throw new Error('Erro ao atualizar quantidade');
@@ -143,7 +188,13 @@ function mostrarTodos() {
 function exportarCSV() {
   const linhas = [['Nome', 'Qtd Atual', 'Qtd Mínima', 'Qtd Máxima', 'Status']];
   document.querySelectorAll('#tabelaProdutos tbody tr').forEach(tr => {
-    const cols = Array.from(tr.children).slice(0, 5).map(td => td.innerText);
+    const cols = Array.from(tr.children).slice(0, 5).map(td => {
+      let texto = td.innerText;
+      if (texto.includes(',') || texto.includes('"')) {
+        texto = '"' + texto.replace(/"/g, '""') + '"';
+      }
+      return texto;
+    });
     linhas.push(cols);
   });
 

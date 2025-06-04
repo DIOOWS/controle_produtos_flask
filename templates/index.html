@@ -80,7 +80,33 @@
 
     thead { background-color: #a32020; color: white; }
     th, td { padding: 10px; text-align: center; border: 1px solid #ddd; }
-    td input { width: 60px; padding: 5px; text-align: center; }
+    td input {
+      width: 60px;
+      padding: 5px;
+      text-align: center;
+    }
+
+    /* Botões + e - */
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .qty-controls button {
+      width: 28px;
+      height: 28px;
+      font-weight: bold;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #f0f0f0;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+    .qty-controls button:hover {
+      background-color: #ddd;
+    }
 
     .status-urgente { color: red; font-weight: bold; }
     .status-ok { color: green; font-weight: bold; }
@@ -106,6 +132,10 @@
       h2 { font-size: 22px; }
       .search input, .add-product input { max-width: 100%; }
       table { font-size: 14px; }
+      .qty-controls button {
+        width: 24px;
+        height: 24px;
+      }
     }
   </style>
 </head>
@@ -159,10 +189,10 @@
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
 <script>
-  // Logout
+  // Logout (já implementado no seu JS, mas deixei aqui para garantir)
   document.getElementById('btnLogout').addEventListener('click', async () => {
     try {
-      const res = await fetch('/logout', { method: 'POST' });
+      const res = await fetch('/api/logout', { method: 'POST' }); // conforme seu JS corrigido
       if (res.ok) {
         window.location.href = '/login';
       } else {
@@ -172,6 +202,62 @@
       alert('Erro na conexão.');
     }
   });
+
+  // Substituir a função mostrarProdutos do seu JS para inserir os botões + e -
+  function mostrarProdutos(produtos) {
+    const tbody = document.querySelector('#tabelaProdutos tbody');
+    tbody.innerHTML = '';
+
+    produtos.forEach(produto => {
+      const status = calcularStatus(produto.qtdAtual, produto.qtdMin, produto.qtdMax);
+      const row = document.createElement('tr');
+      row.dataset.status = status;
+
+      row.innerHTML = `
+        <td>${produto.nome}</td>
+        <td>
+          <div class="qty-controls">
+            <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
+            <input type="number" value="${produto.qtdAtual}" onchange="atualizarQuantidade(${produto.id}, this.value)" />
+            <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
+          </div>
+        </td>
+        <td>${produto.qtdMin}</td>
+        <td>${produto.qtdMax}</td>
+        <td class="status-${status.toLowerCase()}">${status}</td>
+        <td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>
+      `;
+
+      tbody.appendChild(row);
+    });
+  }
+
+  // Função auxiliar para os botões + e -
+  async function alterarQuantidade(id, delta) {
+    try {
+      // Buscar o input da linha correspondente para pegar valor atual
+      const row = [...document.querySelectorAll('#tabelaProdutos tbody tr')].find(r => {
+        return r.querySelector('.qty-controls button') && r.querySelector('.qty-controls button').onclick.toString().includes(`alterarQuantidade(${id}`);
+      });
+      // Como encontrar a linha pelo id pode ser complicado por onclick string, melhor fazer diferente:
+      // Vamos buscar o input por um seletor direto
+      const input = [...document.querySelectorAll('#tabelaProdutos tbody tr')].find(tr => {
+        const onclicks = tr.querySelectorAll('button');
+        return [...onclicks].some(btn => btn.getAttribute('onclick')?.includes(`alterarQuantidade(${id}`));
+      })?.querySelector('input');
+
+      if (!input) return;
+
+      let novaQtd = parseInt(input.value) + delta;
+      if (novaQtd < 0) novaQtd = 0; // evitar número negativo
+
+      input.value = novaQtd;
+
+      await atualizarQuantidade(id, novaQtd);
+    } catch (error) {
+      alert(error.message);
+    }
+  }
 </script>
 
 </body>
