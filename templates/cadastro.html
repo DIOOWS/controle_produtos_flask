@@ -3,38 +3,34 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Cadastro de Usuário</title>
+    <title>Cadastro</title>
 </head>
 <body>
-    <h2>Cadastro</h2>
+    <h1>Cadastro de Usuário</h1>
     <form id="formCadastro">
-        <input type="text" placeholder="Usuário" id="username" required><br>
-        <input type="password" placeholder="Senha" id="password" required><br>
+        <input type="text" name="username" placeholder="Usuário" required><br>
+        <input type="password" name="password" placeholder="Senha" required><br>
         <button type="submit">Cadastrar</button>
     </form>
-    <p id="mensagem"></p>
+    <p id="msg"></p>
 
     <script>
-        document.getElementById("formCadastro").addEventListener("submit", async function (e) {
+        document.getElementById("formCadastro").addEventListener("submit", async function(e) {
             e.preventDefault();
+            const form = new FormData(this);
+            const data = {
+                username: form.get("username"),
+                password: form.get("password")
+            };
 
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-
-            const res = await fetch('/api/cadastro', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+            const res = await fetch("/api/cadastro", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
             });
 
-            const data = await res.json();
-            if (res.ok) {
-                document.getElementById("mensagem").innerText = 'Cadastro realizado com sucesso!';
-                // Redireciona para login
-                window.location.href = '/login';
-            } else {
-                document.getElementById("mensagem").innerText = data.error || 'Erro ao cadastrar';
-            }
+            const result = await res.json();
+            document.getElementById("msg").innerText = result.message || result.error;
         });
     </script>
 </body>
