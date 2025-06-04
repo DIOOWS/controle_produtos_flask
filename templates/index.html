@@ -7,9 +7,33 @@
   <style>
     * { box-sizing: border-box; font-family: Arial, sans-serif; }
     body { margin: 0; background-color: #fff; }
-    header { background-color: #a32020; padding: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    header {
+      background-color: #a32020;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      position: relative;
+    }
     header img { width: 40px; height: 40px; }
     header h1 { color: white; font-size: 32px; margin: 0; }
+    #btnLogout {
+      position: absolute;
+      right: 20px;
+      padding: 8px 16px;
+      cursor: pointer;
+      border: none;
+      background-color: #333;
+      color: white;
+      font-weight: bold;
+      border-radius: 6px;
+      transition: background-color 0.3s ease;
+    }
+    #btnLogout:hover {
+      background-color: #555;
+    }
     h2 { text-align: center; color: #f4a300; margin-top: 20px; font-size: 28px; }
 
     .filters, .search, .add-product, .export-button {
@@ -90,6 +114,7 @@
 <header>
   <img src="https://cdn-icons-png.flaticon.com/512/2554/2554971.png" alt="Logo" />
   <h1>XODÓ</h1>
+  <button id="btnLogout">Logout</button>
 </header>
 
 <h2>Controle de Produtos</h2>
@@ -132,5 +157,22 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+<script>
+  // Logout
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    try {
+      const res = await fetch('/logout', { method: 'POST' });
+      if (res.ok) {
+        window.location.href = '/login';
+      } else {
+        alert('Erro ao fazer logout.');
+      }
+    } catch (e) {
+      alert('Erro na conexão.');
+    }
+  });
+</script>
+
 </body>
 </html>

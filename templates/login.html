@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    form { background: white; padding: 20px; border-radius: 6px; box-shadow: 0 0 10px #aaa; width: 300px; }
+    input { width: 100%; padding: 8px; margin: 8px 0; }
+    button { width: 100%; padding: 10px; background: #007bff; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; }
+    .error { color: red; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <form id="loginForm">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Usuário" required />
+    <input type="password" id="password" placeholder="Senha" required />
+    <button type="submit">Entrar</button>
+    <div class="error" id="errorMsg"></div>
+  </form>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const errorMsg = document.getElementById('errorMsg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.textContent = '';
+
+      const username = form.username.value.trim();
+      const password = form.password.value.trim();
+
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        const data = await res.json();
+        errorMsg.textContent = data.error || 'Erro no login';
+      }
+    });
+  </script>
+</body>
+</html>

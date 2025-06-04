@@ -1,9 +1,30 @@
-document.addEventListener('DOMContentLoaded', carregarProdutos);
+document.addEventListener('DOMContentLoaded', () => {
+  carregarProdutos();
+
+  // Configura o logout
+  const btnLogout = document.getElementById('btnLogout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/logout', { method: 'POST' }); // Corrigido o endpoint
+        if (!response.ok) throw new Error('Erro ao fazer logout');
+        window.location.href = '/login';
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+  }
+});
 
 async function carregarProdutos() {
-  const response = await fetch('/api/produtos');
-  const produtos = await response.json();
-  mostrarProdutos(produtos);
+  try {
+    const response = await fetch('/api/produtos');
+    if (!response.ok) throw new Error('Erro ao carregar produtos');
+    const produtos = await response.json();
+    mostrarProdutos(produtos);
+  } catch (error) {
+    alert(error.message);
+  }
 }
 
 function mostrarProdutos(produtos) {
@@ -11,13 +32,13 @@ function mostrarProdutos(produtos) {
   tbody.innerHTML = '';
 
   produtos.forEach(produto => {
-    const status = calcularStatus(produto.qtd_atual, produto.qtd_minima, produto.qtd_maxima);
+    const status = calcularStatus(produto.qtdAtual, produto.qtdMin, produto.qtdMax); // camelCase para bater com backend
     const row = `
       <tr data-status="${status}">
         <td>${produto.nome}</td>
-        <td><input type="number" value="${produto.qtd_atual}" onchange="atualizarQuantidade(${produto.id}, this.value)" /></td>
-        <td>${produto.qtd_minima}</td>
-        <td>${produto.qtd_maxima}</td>
+        <td><input type="number" value="${produto.qtdAtual}" onchange="atualizarQuantidade(${produto.id}, this.value)" /></td>
+        <td>${produto.qtdMin}</td>
+        <td>${produto.qtdMax}</td>
         <td class="status-${status.toLowerCase()}">${status}</td>
         <td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>
       </tr>
@@ -33,45 +54,67 @@ function calcularStatus(qtdAtual, qtdMin, qtdMax) {
 }
 
 async function adicionarProduto() {
-  const nome = document.getElementById('novoNome').value;
+  const nome = document.getElementById('novoNome').value.trim();
   const qtdAtual = parseInt(document.getElementById('novaQtd').value);
   const qtdMin = parseInt(document.getElementById('qtdMin').value);
   const qtdMax = parseInt(document.getElementById('qtdMax').value);
 
   if (!nome || isNaN(qtdAtual) || isNaN(qtdMin) || isNaN(qtdMax)) {
-    alert("Preencha todos os campos!");
+    alert("Preencha todos os campos corretamente!");
     return;
   }
 
-  const novoProduto = { nome, qtdAtual, qtdMin, qtdMax };
+  // Corrigido para camelCase
+  const novoProduto = {
+    nome,
+    qtdAtual,
+    qtdMin,
+    qtdMax
+  };
 
-  const response = await fetch('/api/produtos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(novoProduto)
-  });
+  try {
+    const response = await fetch('/api/produtos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novoProduto)
+    });
 
-  if (response.ok) {
+    if (!response.ok) throw new Error('Erro ao adicionar produto');
+
     carregarProdutos();
     document.querySelectorAll('.add-product input').forEach(input => input.value = '');
-  } else {
-    alert("Erro ao adicionar produto");
+  } catch (error) {
+    alert(error.message);
   }
 }
 
 async function atualizarQuantidade(id, novaQtd) {
-  await fetch(`/api/produtos/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ qtdAtual: parseInt(novaQtd) })
-  });
-  carregarProdutos();
+  try {
+    // Corrigido para camelCase
+    const response = await fetch(`/api/produtos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ qtdAtual: parseInt(novaQtd) })
+    });
+
+    if (!response.ok) throw new Error('Erro ao atualizar quantidade');
+
+    carregarProdutos();
+  } catch (error) {
+    alert(error.message);
+  }
 }
 
 async function deletarProduto(id) {
-  if (confirm("Tem certeza que deseja excluir este produto?")) {
-    await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
+  if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+
+  try {
+    const response = await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error('Erro ao deletar produto');
+
     carregarProdutos();
+  } catch (error) {
+    alert(error.message);
   }
 }
 
