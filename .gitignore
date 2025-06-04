@@ -1,0 +1,10 @@
+# Arquivos de ambiente
+.env
+*.env
+env/
+
+# Outros arquivos sensíveis/desnecessários
+__pycache__/
+*.pyc
+*.sqlite.env
+.idea/
