@@ -45,7 +45,7 @@ async function adicionarProduto() {
 
   const novoProduto = { nome, qtdAtual, qtdMin, qtdMax };
 
-  const response = await fetch('/api/produtos_estoque', {
+  const response = await fetch('/api/produtos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(novoProduto)
@@ -60,7 +60,7 @@ async function adicionarProduto() {
 }
 
 async function atualizarQuantidade(id, novaQtd) {
-  await fetch(`/api/produtos_estoque/${id}`, {
+  await fetch(`/api/produtos/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ qtdAtual: parseInt(novaQtd) })
@@ -70,7 +70,7 @@ async function atualizarQuantidade(id, novaQtd) {
 
 async function deletarProduto(id) {
   if (confirm("Tem certeza que deseja excluir este produto?")) {
-    await fetch(`/api/produtos_estoque/${id}`, { method: 'DELETE' });
+    await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
     carregarProdutos();
   }
 }
