@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Controle de Produtos</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { margin: 0; background-color: #fff; }
+    header { background-color: #a32020; padding: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    header img { width: 40px; height: 40px; }
+    header h1 { color: white; font-size: 32px; margin: 0; }
+    h2 { text-align: center; color: #f4a300; margin-top: 20px; font-size: 28px; }
+
+    .filters, .search, .add-product, .export-button {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 10px;
+      gap: 10px;
+    }
+
+    .filters button, .add-product button, .export-button button {
+      padding: 10px 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .filters button {
+      background-color: #fff;
+      border: 1px solid #000;
+    }
+
+    .search input, .add-product input {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .add-product input {
+      flex: 1 1 150px;
+    }
+
+    table {
+      width: 95%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      overflow-x: auto;
+    }
+
+    thead { background-color: #a32020; color: white; }
+    th, td { padding: 10px; text-align: center; border: 1px solid #ddd; }
+    td input { width: 60px; padding: 5px; text-align: center; }
+
+    .status-urgente { color: red; font-weight: bold; }
+    .status-ok { color: green; font-weight: bold; }
+    .status-excesso { color: blue; font-weight: bold; }
+    .delete-icon { cursor: pointer; color: black; font-size: 20px; }
+
+    .export-button button {
+      background-color: #4b47f4;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 10px;
+    }
+
+    .add-product button {
+      background-color: #28a745;
+      color: white;
+      font-size: 16px;
+    }
+
+    @media (max-width: 768px) {
+      header h1 { font-size: 24px; }
+      h2 { font-size: 22px; }
+      .search input, .add-product input { max-width: 100%; }
+      table { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="https://cdn-icons-png.flaticon.com/512/2554/2554971.png" alt="Logo" />
+  <h1>XODÓ</h1>
+</header>
+
+<h2>Controle de Produtos</h2>
+
+<div class="filters">
+  <button onclick="filtrarStatus('URGENTE')">Urgente</button>
+  <button onclick="filtrarStatus('EXCESSO')">Excesso</button>
+  <button onclick="filtrarStatus('OK')">OK</button>
+  <button onclick="mostrarTodos()">Todos</button>
+</div>
+
+<div class="search">
+  <input type="text" id="busca" placeholder="Buscar produto..." onkeyup="buscarProduto()" />
+</div>
+
+<div class="add-product">
+  <input type="text" id="novoNome" placeholder="Nome do produto">
+  <input type="number" id="novaQtd" placeholder="Qtd Atual">
+  <input type="number" id="qtdMin" placeholder="Qtd Mínima">
+  <input type="number" id="qtdMax" placeholder="Qtd Máxima">
+  <button onclick="adicionarProduto()">Adicionar</button>
+</div>
+
+<table id="tabelaProdutos">
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>Qtd Atual</th>
+      <th>Qtd Mínima</th>
+      <th>Qtd Máxima</th>
+      <th>Status</th>
+      <th>Excluir</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div class="export-button">
+  <button onclick="exportarCSV()">Exportar CSV</button>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
