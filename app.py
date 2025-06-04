@@ -22,17 +22,17 @@ def home():
 
 
 # API - Listar todos os produtos
-@app.route('/api/produtos_estoque', methods=['GET'])
+@app.route('/api/produtos', methods=['GET'])
 def get_produtos():
     try:
-        response = supabase.table('produtos_estoque').select('*').order('id', desc=True).execute()
+        response = supabase.table('produtos').select('*').order('id', desc=True).execute()
         return jsonify(response.data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 # API - Adicionar novo produto
-@app.route('/api/produtos_estoque', methods=['POST'])
+@app.route('/api/produtos', methods=['POST'])
 def add_produto():
     data = request.get_json()
 
@@ -49,14 +49,14 @@ def add_produto():
             'criado_em': datetime.now().isoformat()
         }
 
-        response = supabase.table('produtos_estoque').insert(new_product).execute()
+        response = supabase.table('produtos').insert(new_product).execute()
         return jsonify(response.data[0]), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 # API - Atualizar produto
-@app.route('/api/produtos_estoque/<int:id>', methods=['PUT'])
+@app.route('/api/produtos/<int:id>', methods=['PUT'])
 def update_produto(id):
     data = request.get_json()
 
@@ -71,17 +71,17 @@ def update_produto(id):
         # Remove valores None
         updates = {k: v for k, v in updates.items() if v is not None}
 
-        response = supabase.table('produtos_estoque').update(updates).eq('id', id).execute()
+        response = supabase.table('produtos').update(updates).eq('id', id).execute()
         return jsonify(response.data[0])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 # API - Deletar produto
-@app.route('/api/produtos_estoque/<int:id>', methods=['DELETE'])
+@app.route('/api/produtos/<int:id>', methods=['DELETE'])
 def delete_produto(id):
     try:
-        supabase.table('produtos_estoque').delete().eq('id', id).execute()
+        supabase.table('produtos').delete().eq('id', id).execute()
         return jsonify({'success': True}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
