@@ -117,38 +117,20 @@ async function atualizarQuantidade(id, novaQtd) {
   }
 }
 
-async function alterarQuantidade(id, delta) {
+async function alterarQuantidade(button, id, delta) {
   try {
-    // Seleciona o input da quantidade atual do produto com o id passado
-    const linhas = document.querySelectorAll('#tabelaProdutos tbody tr');
-    let inputElement = null;
+    const input = button.parentElement.querySelector('input');
+    let novaQtd = parseInt(input.value) + delta;
+    if (novaQtd < 0) novaQtd = 0;
 
-    linhas.forEach(tr => {
-      const deleteIcon = tr.querySelector('.delete-icon');
-      if (deleteIcon && deleteIcon.getAttribute('onclick').includes(`deletarProduto(${id})`)) {
-        inputElement = tr.querySelector('input[type="number"]');
-      }
-    });
+    input.value = novaQtd;
 
-    if (!inputElement) throw new Error('Produto não encontrado');
-
-    let novaQtd = parseInt(inputElement.value) + delta;
-    if (isNaN(novaQtd) || novaQtd < 0) novaQtd = 0;
-
-    // Atualiza o backend
-    const response = await fetch(`/api/produtos/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qtdAtual: novaQtd })
-    });
-
-    if (!response.ok) throw new Error('Erro ao atualizar quantidade');
-
-    carregarProdutos();
+    await atualizarQuantidade(id, novaQtd);
   } catch (error) {
-    alert(error.message);
+    alert('Erro ao alterar quantidade: ' + error.message);
   }
 }
+
 
 async function deletarProduto(id) {
   if (!confirm("Tem certeza que deseja excluir este produto?")) return;

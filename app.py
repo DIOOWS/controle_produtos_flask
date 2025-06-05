@@ -149,6 +149,11 @@ def delete_produto(id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return '', 200
+
 @app.route('/health')
 def health():
     return jsonify({'status': 'healthy'}), 200

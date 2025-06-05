@@ -5,14 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    form { background: white; padding: 20px; border-radius: 6px; box-shadow: 0 0 10px #aaa; width: 300px; }
-    input { width: 100%; padding: 8px; margin: 8px 0; }
-    button { width: 100%; padding: 10px; background: #007bff; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; }
-    .error { color: red; margin-top: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #ff0000, #00ffff); /* vermelho → ciano */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    form {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 320px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      border: none;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
     .cadastro-btn {
       margin-top: 10px;
       background: #28a745;
+    }
+
+    .cadastro-btn:hover {
+      background: #1e7e34;
+    }
+
+    .error {
+      color: red;
+      margin-top: 15px;
+      font-weight: bold;
     }
   </style>
 </head>

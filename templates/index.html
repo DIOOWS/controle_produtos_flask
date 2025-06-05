@@ -217,9 +217,9 @@
         <td>${produto.nome}</td>
         <td>
           <div class="qty-controls">
-            <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
+            <button onclick="alterarQuantidade(this, ${produto.id}, -1)">-</button>
             <input type="number" value="${produto.qtdAtual}" onchange="atualizarQuantidade(${produto.id}, this.value)" />
-            <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
+            <button onclick="alterarQuantidade(this, ${produto.id}, 1)">+</button>
           </div>
         </td>
         <td>${produto.qtdMin}</td>

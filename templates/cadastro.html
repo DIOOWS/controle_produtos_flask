@@ -4,15 +4,72 @@
 <head>
     <meta charset="UTF-8">
     <title>Cadastro</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #39FF14, #0b3d0b); /* Verde fluorescente → verde escuro */
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        form {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            width: 320px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #0b3d0b;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        #msg {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <h1>Cadastro de Usuário</h1>
     <form id="formCadastro">
+        <h1>Cadastro de Usuário</h1>
         <input type="text" name="username" placeholder="Usuário" required><br>
         <input type="password" name="password" placeholder="Senha" required><br>
         <button type="submit">Cadastrar</button>
+        <p id="msg"></p>
     </form>
-    <p id="msg"></p>
 
     <script>
         document.getElementById("formCadastro").addEventListener("submit", async function(e) {
@@ -30,7 +87,9 @@
             });
 
             const result = await res.json();
-            document.getElementById("msg").innerText = result.message || result.error;
+            const msgEl = document.getElementById("msg");
+            msgEl.innerText = result.message || result.error;
+            msgEl.style.color = result.error ? 'red' : 'green';
         });
     </script>
 </body>
