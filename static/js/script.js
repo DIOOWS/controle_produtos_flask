@@ -1,62 +1,62 @@
-document.addEventListener('DOMContentLoaded', () => {
-  carregarProdutos();
+let produtos = [];
+let filtroCategoria = 'todos';
+let filtroBusca = '';
 
-  // Configura o logout
-  const btnLogout = document.getElementById('btnLogout');
-  if (btnLogout) {
-    btnLogout.addEventListener('click', async () => {
-      try {
-        const response = await fetch('/api/logout', { method: 'POST' });
-        if (!response.ok) throw new Error('Erro ao fazer logout');
-        window.location.href = '/login';
-      } catch (error) {
-        alert(error.message);
-      }
-    });
-  }
+// Ao carregar a página, pega os produtos do backend
+document.addEventListener('DOMContentLoaded', async () => {
+  await carregarProdutos();
 });
 
+// Busca os produtos no backend
 async function carregarProdutos() {
   try {
-    const response = await fetch('/api/produtos');
-    if (!response.ok) throw new Error('Erro ao carregar produtos');
-    const produtos = await response.json();
+    const resposta = await fetch('/produtos');
+    produtos = await resposta.json();
     mostrarProdutos(produtos);
   } catch (error) {
-    alert(error.message);
+    alert('Erro ao carregar produtos: ' + error.message);
   }
 }
 
-function mostrarProdutos(produtos) {
+// Mostrar produtos na tabela
+function mostrarProdutos(lista) {
   const tbody = document.querySelector('#tabelaProdutos tbody');
   tbody.innerHTML = '';
 
-  produtos.forEach(produto => {
-    const status = calcularStatus(produto.qtdAtual, produto.qtdMin, produto.qtdMax);
-    const row = `
-      <tr data-status="${status}">
-        <td>${produto.nome}</td>
-        <td>
-          <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
-          <input type="number" value="${produto.qtdAtual}" onchange="atualizarQuantidade(${produto.id}, this.value)" />
-          <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
-        </td>
-        <td>${produto.qtdMin}</td>
-        <td>${produto.qtdMax}</td>
-        <td class="status-${status.toLowerCase()}">${status}</td>
-        <td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>
-      </tr>
+  lista.forEach(produto => {
+    const status = calcularStatus(produto.qtd_atual, produto.qtd_minima, produto.qtd_maxima);
+
+    const row = document.createElement('tr');
+    row.dataset.status = status;
+    row.dataset.id = produto.id;
+
+    row.innerHTML = `
+      <td>${produto.nome}</td>
+      <td>
+        <div class="qty-controls">
+          <button onclick="alterarQuantidade(this, ${produto.id}, -1)">-</button>
+          <input type="number" value="${produto.qtd_atual}" onchange="atualizarQuantidade(${produto.id}, this.value)" />
+          <button onclick="alterarQuantidade(this, ${produto.id}, 1)">+</button>
+        </div>
+      </td>
+      <td>${produto.qtd_minima}</td>
+      <td>${produto.qtd_maxima}</td>
+      <td class="status-${status.toLowerCase()}">${status}</td>
+      <td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>
     `;
-    tbody.innerHTML += row;
+
+    tbody.appendChild(row);
   });
 }
 
+// Cálculo do status
 function calcularStatus(qtdAtual, qtdMin, qtdMax) {
-  if (qtdAtual <= qtdMin) return 'URGENTE';
-  if (qtdAtual >= qtdMax) return 'EXCESSO';
+  if (qtdAtual < qtdMin) return 'URGENTE';
+  if (qtdAtual > qtdMax) return 'EXCESSO';
   return 'OK';
 }
 
+// Adicionar novo produto
 async function adicionarProduto() {
   const nome = document.getElementById('novoNome').value.trim();
   const qtdAtual = parseInt(document.getElementById('novaQtd').value);
@@ -64,126 +64,115 @@ async function adicionarProduto() {
   const qtdMax = parseInt(document.getElementById('qtdMax').value);
 
   if (!nome || isNaN(qtdAtual) || isNaN(qtdMin) || isNaN(qtdMax)) {
-    alert("Preencha todos os campos corretamente!");
+    alert('Preencha todos os campos corretamente.');
     return;
   }
 
-  if (qtdMin > qtdMax) {
-    alert("A quantidade mínima não pode ser maior que a máxima!");
-    return;
-  }
-
-  if (qtdAtual < 0) {
-    alert("A quantidade atual não pode ser negativa!");
-    return;
-  }
-
-  const novoProduto = {
-    nome,
-    qtdAtual,
-    qtdMin,
-    qtdMax
-  };
+  const novoProduto = { nome, qtd_atual: qtdAtual, qtd_minima: qtdMin, qtd_maxima: qtdMax };
 
   try {
-    const response = await fetch('/api/produtos', {
+    const res = await fetch('/produtos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(novoProduto)
     });
 
-    if (!response.ok) throw new Error('Erro ao adicionar produto');
-
-    carregarProdutos();
-    document.querySelectorAll('.add-product input').forEach(input => input.value = '');
+    if (res.ok) {
+      await carregarProdutos();
+      document.getElementById('novoNome').value = '';
+      document.getElementById('novaQtd').value = '';
+      document.getElementById('qtdMin').value = '';
+      document.getElementById('qtdMax').value = '';
+    } else {
+      alert('Erro ao adicionar produto.');
+    }
   } catch (error) {
-    alert(error.message);
+    alert('Erro na conexão: ' + error.message);
   }
 }
 
+// Atualizar quantidade
 async function atualizarQuantidade(id, novaQtd) {
   try {
-    const response = await fetch(`/api/produtos/${id}`, {
+    const res = await fetch(`/produtos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qtdAtual: parseInt(novaQtd) })
+      body: JSON.stringify({ qtd_atual: parseInt(novaQtd) })
     });
 
-    if (!response.ok) throw new Error('Erro ao atualizar quantidade');
-
-    carregarProdutos();
+    if (res.ok) {
+      await carregarProdutos();
+    } else {
+      alert('Erro ao atualizar quantidade.');
+    }
   } catch (error) {
-    alert(error.message);
+    alert('Erro na conexão: ' + error.message);
   }
 }
 
-async function alterarQuantidade(button, id, delta) {
-  try {
-    const input = button.parentElement.querySelector('input');
-    let novaQtd = parseInt(input.value) + delta;
-    if (novaQtd < 0) novaQtd = 0;
-
-    input.value = novaQtd;
-
-    await atualizarQuantidade(id, novaQtd);
-  } catch (error) {
-    alert('Erro ao alterar quantidade: ' + error.message);
-  }
+// Botões + e -
+function alterarQuantidade(btn, id, delta) {
+  const row = btn.closest('tr');
+  const input = row.querySelector('input');
+  let novaQtd = parseInt(input.value) + delta;
+  if (novaQtd < 0) novaQtd = 0;
+  input.value = novaQtd;
+  atualizarQuantidade(id, novaQtd);
 }
 
-
+// Deletar produto
 async function deletarProduto(id) {
-  if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+  if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
   try {
-    const response = await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
-    if (!response.ok) throw new Error('Erro ao deletar produto');
+    const res = await fetch(`/produtos/${id}`, { method: 'DELETE' });
 
-    carregarProdutos();
+    if (res.ok) {
+      await carregarProdutos();
+    } else {
+      alert('Erro ao deletar produto.');
+    }
   } catch (error) {
-    alert(error.message);
+    alert('Erro na conexão: ' + error.message);
   }
 }
 
-function buscarProduto() {
-  const termo = document.getElementById('busca').value.toLowerCase();
-  const linhas = document.querySelectorAll('#tabelaProdutos tbody tr');
-  linhas.forEach(linha => {
-    const nome = linha.children[0].textContent.toLowerCase();
-    linha.style.display = nome.includes(termo) ? '' : 'none';
-  });
-}
-
+// Filtro por status
 function filtrarStatus(status) {
-  const linhas = document.querySelectorAll('#tabelaProdutos tbody tr');
-  linhas.forEach(linha => {
-    linha.style.display = linha.dataset.status === status ? '' : 'none';
-  });
+  const filtrados = produtos.filter(p => calcularStatus(p.qtd_atual, p.qtd_minima, p.qtd_maxima) === status);
+  mostrarProdutos(filtrados);
 }
 
 function mostrarTodos() {
-  document.querySelectorAll('#tabelaProdutos tbody tr').forEach(linha => {
-    linha.style.display = '';
-  });
+  mostrarProdutos(produtos);
 }
 
+// Busca por nome
+function buscarProduto() {
+  const termo = document.getElementById('busca').value.toLowerCase();
+  const filtrados = produtos.filter(p => p.nome.toLowerCase().includes(termo));
+  mostrarProdutos(filtrados);
+}
+
+// Exportar CSV
 function exportarCSV() {
-  const linhas = [['Nome', 'Qtd Atual', 'Qtd Mínima', 'Qtd Máxima', 'Status']];
-  document.querySelectorAll('#tabelaProdutos tbody tr').forEach(tr => {
-    const cols = Array.from(tr.children).slice(0, 5).map(td => {
-      let texto = td.innerText;
-      if (texto.includes(',') || texto.includes('"')) {
-        texto = '"' + texto.replace(/"/g, '""') + '"';
-      }
-      return texto;
-    });
-    linhas.push(cols);
+  let csv = 'Nome,Qtd Atual,Qtd Mínima,Qtd Máxima,Status\n';
+  const rows = document.querySelectorAll('#tabelaProdutos tbody tr');
+
+  rows.forEach(row => {
+    const cols = row.querySelectorAll('td');
+    const nome = cols[0].textContent;
+    const qtdAtual = cols[1].querySelector('input')?.value || '';
+    const qtdMin = cols[2].textContent;
+    const qtdMax = cols[3].textContent;
+    const status = cols[4].textContent;
+
+    csv += `${nome},${qtdAtual},${qtdMin},${qtdMax},${status}\n`;
   });
 
-  const csv = linhas.map(l => l.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'produtos.csv';
+  link.setAttribute('href', URL.createObjectURL(blob));
+  link.setAttribute('download', 'produtos.csv');
   link.click();
 }
