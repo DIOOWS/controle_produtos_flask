@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Busca os produtos no backend
 async function carregarProdutos() {
   try {
-    const resposta = await fetch('/produtos');
+    const resposta = await fetch('/api/produtos');
     produtos = await resposta.json();
     mostrarProdutos(produtos);
   } catch (error) {
@@ -71,7 +71,7 @@ async function adicionarProduto() {
   const novoProduto = { nome, qtd_atual: qtdAtual, qtd_minima: qtdMin, qtd_maxima: qtdMax };
 
   try {
-    const res = await fetch('/produtos', {
+    const res = await fetch('/api/produtos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(novoProduto)
@@ -94,7 +94,7 @@ async function adicionarProduto() {
 // Atualizar quantidade
 async function atualizarQuantidade(id, novaQtd) {
   try {
-    const res = await fetch(`/produtos/${id}`, {
+    const res = await fetch(`/api/produtos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ qtd_atual: parseInt(novaQtd) })
@@ -125,7 +125,7 @@ async function deletarProduto(id) {
   if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
   try {
-    const res = await fetch(`/produtos/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
 
     if (res.ok) {
       await carregarProdutos();
