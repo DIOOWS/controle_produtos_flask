@@ -109,9 +109,9 @@ def add_produto():
     try:
         new_product = {
             'nome': data['nome'],
-            'qtd_atual': data['qtdAtual'],
-            'qtd_minima': data['qtdMin'],
-            'qtd_maxima': data['qtdMax'],
+            'qtd_atual': int(data['qtdAtual']),
+            'qtd_minima': int(data['qtdMin']),
+            'qtd_maxima': int(data['qtdMax']),
             'criado_em': datetime.now().isoformat()
         }
         response = supabase.table('produtos').insert(new_product).execute()
@@ -126,23 +126,22 @@ def update_produto(id):
 
     data = request.get_json()
     try:
+        qtd_atual = data.get('qtdAtual')
+        qtd_minima = data.get('qtdMin')
+        qtd_maxima = data.get('qtdMax')
+
+        if any(v is None for v in [qtd_atual, qtd_minima, qtd_maxima]):
+            return jsonify({'error': 'Valores ausentes'}), 400
+
         updates = {
-            'qtd_atual': data.get('qtdAtual'),
-            'qtd_minima': data.get('qtdMin'),
-            'qtd_maxima': data.get('qtdMax'),
+            'qtd_atual': int(qtd_atual),
+            'qtd_minima': int(qtd_minima),
+            'qtd_maxima': int(qtd_maxima),
             'atualizado_em': datetime.now().isoformat()
         }
-        updates = {k: v for k, v in updates.items() if v is not None}
-
         response = supabase.table('produtos').update(updates).eq('id', id).execute()
-
-        if response.data:
-            return jsonify(response.data[0]), 200
-        else:
-            return jsonify({'message': 'Produto atualizado com sucesso'}), 200
-
+        return jsonify(response.data[0])
     except Exception as e:
-        print('Erro no update:', e)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/produtos/<int:id>', methods=['DELETE'])

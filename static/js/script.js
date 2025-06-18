@@ -106,25 +106,44 @@ async function adicionarProduto() {
 }
 
 // Atualizar quantidade
-async function atualizarQuantidade(id, novaQtd) {
-  try {
-    const res = await fetch(`/api/produtos/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ qtd_atual: parseInt(novaQtd) })
-    });
+async function atualizarQuantidade(id) {
+    const linha = document.querySelector(`#produto-${id}`);
+    const qtdAtual = parseInt(linha.querySelector('.qtd-atual').value);
+    const qtdMin = parseInt(linha.querySelector('.qtd-min').value);
+    const qtdMax = parseInt(linha.querySelector('.qtd-max').value);
 
-    if (res.ok) {
-      await carregarProdutos();
-    } else {
-      alert('Erro ao atualizar quantidade.');
+    if (isNaN(qtdAtual) || isNaN(qtdMin) || isNaN(qtdMax)) {
+        alert("Valores inválidos! Preencha todos os campos.");
+        return;
     }
-  } catch (error) {
-    alert('Erro na conexão: ' + error.message);
-  }
+
+    const dados = {
+        qtdAtual,
+        qtdMin,
+        qtdMax
+    };
+
+    try {
+        const res = await fetch(`/api/produtos/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+        });
+
+        if (!res.ok) {
+            const erro = await res.text();
+            console.error("Erro ao atualizar:", erro);
+            alert("Erro ao atualizar o produto.");
+        }
+    } catch (error) {
+        console.error("Erro de rede:", error);
+        alert("Erro de rede ao atualizar o produto.");
+    }
 }
+
+
 
 // Alterar quantidade com botão + e -
 function alterarQuantidade(id, delta) {
