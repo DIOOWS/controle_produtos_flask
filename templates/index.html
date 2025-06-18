@@ -192,7 +192,7 @@
   // Logout (já implementado no seu JS, mas deixei aqui para garantir)
   document.getElementById('btnLogout').addEventListener('click', async () => {
     try {
-      const res = await fetch('/api/logout', { method: 'POST' }); // conforme seu JS corrigido
+      const res = await fetch('/logout', { method: 'POST' }); // conforme seu JS corrigido
       if (res.ok) {
         window.location.href = '/login';
       } else {

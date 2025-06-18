@@ -1,13 +1,28 @@
 let produtos = [];
 let filtroCategoria = 'todos';
-let filtroBusca = '';
 
 // Ao carregar a página, pega os produtos do backend
 document.addEventListener('DOMContentLoaded', async () => {
   await carregarProdutos();
+
+  const logoutBtn = document.getElementById('btnLogout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/logout', { method: 'POST' });
+        if (res.ok) {
+          window.location.href = '/login';
+        } else {
+          alert('Erro ao fazer logout.');
+        }
+      } catch (error) {
+        alert('Erro na conexão: ' + error.message);
+      }
+    });
+  }
 });
 
-// Busca os produtos no backend
+// Buscar produtos do backend
 async function carregarProdutos() {
   try {
     const resposta = await fetch('/api/produtos');
@@ -18,14 +33,13 @@ async function carregarProdutos() {
   }
 }
 
-// Mostrar produtos na tabela
+// Exibir produtos na tabela
 function mostrarProdutos(lista) {
   const tbody = document.querySelector('#tabelaProdutos tbody');
   tbody.innerHTML = '';
 
   lista.forEach(produto => {
     const status = calcularStatus(produto.qtd_atual, produto.qtd_minima, produto.qtd_maxima);
-
     const row = document.createElement('tr');
     row.dataset.status = status;
     row.dataset.id = produto.id;
@@ -34,9 +48,9 @@ function mostrarProdutos(lista) {
       <td>${produto.nome}</td>
       <td>
         <div class="qty-controls">
-          <button onclick="alterarQuantidade(this, ${produto.id}, -1)">-</button>
+          <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
           <input type="number" value="${produto.qtd_atual}" onchange="atualizarQuantidade(${produto.id}, this.value)" />
-          <button onclick="alterarQuantidade(this, ${produto.id}, 1)">+</button>
+          <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
         </div>
       </td>
       <td>${produto.qtd_minima}</td>
@@ -96,7 +110,9 @@ async function atualizarQuantidade(id, novaQtd) {
   try {
     const res = await fetch(`/api/produtos/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ qtd_atual: parseInt(novaQtd) })
     });
 
@@ -110,9 +126,9 @@ async function atualizarQuantidade(id, novaQtd) {
   }
 }
 
-// Botões + e -
-function alterarQuantidade(btn, id, delta) {
-  const row = btn.closest('tr');
+// Alterar quantidade com botão + e -
+function alterarQuantidade(id, delta) {
+  const row = document.querySelector(`tr[data-id="${id}"]`);
   const input = row.querySelector('input');
   let novaQtd = parseInt(input.value) + delta;
   if (novaQtd < 0) novaQtd = 0;
