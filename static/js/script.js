@@ -82,7 +82,13 @@ async function adicionarProduto() {
     return;
   }
 
-  const novoProduto = { nome, qtd_atual: qtdAtual, qtd_minima: qtdMin, qtd_maxima: qtdMax };
+  const novoProduto = {
+  nome,
+  qtdAtual: qtdAtual,  // observe a capitalização
+  qtdMin: qtdMin,
+  qtdMax: qtdMax
+};
+
 
   try {
     const res = await fetch('/api/produtos', {

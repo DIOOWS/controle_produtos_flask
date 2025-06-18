@@ -102,22 +102,18 @@ def add_produto():
         return jsonify({'error': 'Não autorizado'}), 401
 
     data = request.get_json()
-    required_fields = ['nome', 'qtdAtual', 'qtdMin', 'qtdMax']
+    required_fields = ['nome', 'qtd_atual', 'qtd_minima', 'qtd_maxima']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Campos faltando'}), 400
 
-    try:
-        new_product = {
-            'nome': data['nome'],
-            'qtd_atual': int(data['qtdAtual']),
-            'qtd_minima': int(data['qtdMin']),
-            'qtd_maxima': int(data['qtdMax']),
-            'criado_em': datetime.now().isoformat()
-        }
-        response = supabase.table('produtos').insert(new_product).execute()
-        return jsonify(response.data[0]), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    new_product = {
+        'nome': data['nome'],
+        'qtd_atual': int(data['qtd_atual']),
+        'qtd_minima': int(data['qtd_minima']),
+        'qtd_maxima': int(data['qtd_maxima']),
+        'criado_em': datetime.now().isoformat()
+    }
+
 
 @app.route('/api/produtos/<int:id>', methods=['PUT'])
 def update_produto(id):
