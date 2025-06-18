@@ -35,7 +35,6 @@ def cadastrar_usuario():
     if not username or not password:
         return jsonify({'error': 'Usuário e senha são obrigatórios'}), 400
 
-    # Verifica se o usuário já existe
     existe = supabase.table('usuarios').select('*').eq('username', username).execute()
     if existe.data:
         return jsonify({'error': 'Usuário já existe'}), 400
@@ -134,9 +133,16 @@ def update_produto(id):
             'atualizado_em': datetime.now().isoformat()
         }
         updates = {k: v for k, v in updates.items() if v is not None}
+
         response = supabase.table('produtos').update(updates).eq('id', id).execute()
-        return jsonify(response.data[0])
+
+        if response.data:
+            return jsonify(response.data[0]), 200
+        else:
+            return jsonify({'message': 'Produto atualizado com sucesso'}), 200
+
     except Exception as e:
+        print('Erro no update:', e)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/produtos/<int:id>', methods=['DELETE'])
