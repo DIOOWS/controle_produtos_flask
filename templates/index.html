@@ -5,9 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Controle de Produtos</title>
   <style>
-    * { box-sizing: border-box; font-family: Arial, sans-serif; }
-    body { margin: 0; background-color: #fff; }
+    /* Reset básico */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden; /* evita scroll horizontal */
+      background-color: #fff;
+    }
+
+    /* Header fixo e responsivo */
     header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
       background-color: #a32020;
       padding: 20px;
       display: flex;
@@ -15,13 +30,22 @@
       justify-content: center;
       gap: 10px;
       flex-wrap: wrap;
-      position: relative;
+      z-index: 1000;
     }
-    header img { width: 40px; height: 40px; }
-    header h1 { color: white; font-size: 32px; margin: 0; }
+    header img {
+      width: 180px; /* maior logo */
+      height: auto;
+    }
+    header h1 {
+      color: white;
+      font-size: 32px;
+      margin: 0;
+    }
     #btnLogout {
       position: absolute;
       right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
       padding: 8px 16px;
       cursor: pointer;
       border: none;
@@ -30,11 +54,23 @@
       font-weight: bold;
       border-radius: 6px;
       transition: background-color 0.3s ease;
+      z-index: 1100;
     }
     #btnLogout:hover {
       background-color: #555;
     }
-    h2 { text-align: center; color: #f4a300; margin-top: 20px; font-size: 28px; }
+
+    /* Espaço para não ficar atrás do header fixo */
+    body {
+      padding-top: 80px; /* ajusta conforme altura do header */
+    }
+
+    h2 {
+      text-align: center;
+      color: #f4a300;
+      margin-top: 20px;
+      font-size: 28px;
+    }
 
     .filters, .search, .add-product, .export-button {
       display: flex;
@@ -78,8 +114,15 @@
       overflow-x: auto;
     }
 
-    thead { background-color: #a32020; color: white; }
-    th, td { padding: 10px; text-align: center; border: 1px solid #ddd; }
+    thead {
+      background-color: #a32020;
+      color: white;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
     td input {
       width: 60px;
       padding: 5px;
@@ -126,14 +169,41 @@
       font-size: 16px;
     }
 
+    /* Media Queries */
     @media (max-width: 768px) {
-      header h1 { font-size: 24px; }
-      h2 { font-size: 22px; }
-      .search input, .add-product input { max-width: 100%; }
-      table { font-size: 14px; }
+      header h1 {
+        font-size: 24px;
+      }
+      h2 {
+        font-size: 22px;
+      }
+      .search input, .add-product input {
+        max-width: 100%;
+      }
+      table {
+        font-size: 14px;
+      }
       .qty-controls button {
         width: 24px;
         height: 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #btnLogout {
+        position: static;
+        margin-top: 10px;
+        align-self: center;
+        transform: none;
+        right: auto;
+        top: auto;
+      }
+      header {
+        justify-content: center;
+        gap: 15px;
+      }
+      header img {
+        width: 140px;
       }
     }
   </style>
@@ -141,8 +211,7 @@
 <body>
 
 <header>
-  <img src="{{ url_for('static', filename='logo-xodo.png') }}" alt="Logo Xodó" style="width: 180px; height: auto;" />
-
+  <img src="{{ url_for('static', filename='logo-xodo.png') }}" alt="Logo Xodó" />
   <button id="btnLogout">Logout</button>
 </header>
 
@@ -163,10 +232,10 @@
 
 <!-- formulário de novo produto -->
 <div class="add-product">
-  <input type="text" id="novoNome" placeholder="Nome do produto">
-  <input type="number" id="novaQtd" placeholder="Qtd Atual">
-  <input type="number" id="qtdMin" placeholder="Qtd Mínima">
-  <input type="number" id="qtdMax" placeholder="Qtd Máxima">
+  <input type="text" id="novoNome" placeholder="Nome do produto" />
+  <input type="number" id="novaQtd" placeholder="Qtd Atual" />
+  <input type="number" id="qtdMin" placeholder="Qtd Mínima" />
+  <input type="number" id="qtdMax" placeholder="Qtd Máxima" />
   <button onclick="adicionarProduto()">Adicionar</button>
 </div>
 
