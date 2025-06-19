@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Controle de Produtos</title>
   <style>
-    /* Reset básico */
     *, *::before, *::after {
       box-sizing: border-box;
       font-family: Arial, sans-serif;
@@ -13,11 +12,10 @@
     html, body {
       margin: 0;
       padding: 0;
-      overflow-x: hidden; /* evita scroll horizontal */
+      overflow-x: hidden;
       background-color: #fff;
     }
 
-    /* Header fixo e responsivo */
     header {
       position: fixed;
       top: 0;
@@ -32,15 +30,18 @@
       flex-wrap: wrap;
       z-index: 1000;
     }
+
     header img {
-      width: 180px; /* maior logo */
+      width: 180px;
       height: auto;
     }
+
     header h1 {
       color: white;
       font-size: 32px;
       margin: 0;
     }
+
     #btnLogout {
       position: absolute;
       right: 20px;
@@ -56,13 +57,13 @@
       transition: background-color 0.3s ease;
       z-index: 1100;
     }
+
     #btnLogout:hover {
       background-color: #555;
     }
 
-    /* Espaço para não ficar atrás do header fixo */
     body {
-      padding-top: 80px; /* ajusta conforme altura do header */
+      padding-top: 110px;
     }
 
     h2 {
@@ -106,23 +107,29 @@
       flex: 1 1 150px;
     }
 
-    table {
+    .table-container {
       width: 95%;
       margin: 20px auto;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
       border-collapse: collapse;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      overflow-x: auto;
     }
 
     thead {
       background-color: #a32020;
       color: white;
     }
+
     th, td {
       padding: 10px;
       text-align: center;
       border: 1px solid #ddd;
     }
+
     td input {
       width: 60px;
       padding: 5px;
@@ -135,6 +142,7 @@
       justify-content: center;
       gap: 4px;
     }
+
     .qty-controls button {
       width: 28px;
       height: 28px;
@@ -146,6 +154,7 @@
       user-select: none;
       transition: background-color 0.2s ease;
     }
+
     .qty-controls button:hover {
       background-color: #ddd;
     }
@@ -169,7 +178,6 @@
       font-size: 16px;
     }
 
-    /* Media Queries */
     @media (max-width: 768px) {
       header h1 {
         font-size: 24px;
@@ -195,8 +203,6 @@
         margin-top: 10px;
         align-self: center;
         transform: none;
-        right: auto;
-        top: auto;
       }
       header {
         justify-content: center;
@@ -217,7 +223,6 @@
 
 <h2>Controle de Produtos</h2>
 
-<!-- filtros -->
 <div class="filters">
   <button onclick="filtrarStatus('URGENTE')">Urgente</button>
   <button onclick="filtrarStatus('EXCESSO')">Excesso</button>
@@ -225,36 +230,34 @@
   <button onclick="mostrarTodos()">Todos</button>
 </div>
 
-<!-- busca -->
 <div class="search">
   <input type="text" id="busca" placeholder="Buscar produto..." onkeyup="buscarProduto()" />
 </div>
 
-<!-- formulário de novo produto -->
 <div class="add-product">
-  <input type="text" id="novoNome" placeholder="Nome do produto" />
-  <input type="number" id="novaQtd" placeholder="Qtd Atual" />
-  <input type="number" id="qtdMin" placeholder="Qtd Mínima" />
-  <input type="number" id="qtdMax" placeholder="Qtd Máxima" />
+  <input type="text" id="novoNome" placeholder="Nome do produto">
+  <input type="number" id="novaQtd" placeholder="Qtd Atual">
+  <input type="number" id="qtdMin" placeholder="Qtd Mínima">
+  <input type="number" id="qtdMax" placeholder="Qtd Máxima">
   <button onclick="adicionarProduto()">Adicionar</button>
 </div>
 
-<!-- tabela -->
-<table id="tabelaProdutos">
-  <thead>
-    <tr>
-      <th>Nome</th>
-      <th>Qtd Atual</th>
-      <th>Qtd Mínima</th>
-      <th>Qtd Máxima</th>
-      <th>Status</th>
-      <th>Excluir</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<div class="table-container">
+  <table id="tabelaProdutos">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Qtd Atual</th>
+        <th>Qtd Mínima</th>
+        <th>Qtd Máxima</th>
+        <th>Status</th>
+        <th>Excluir</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
-<!-- botão de exportação -->
 <div class="export-button">
   <button onclick="exportarXLSX()">Exportar para Excel</button>
 </div>
