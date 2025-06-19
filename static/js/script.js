@@ -59,124 +59,84 @@ function mostrarProdutos(lista) {
     row.dataset.status = status;
     row.dataset.id = produto.id;
 
-    let deleteHtml = '';
-    if (usuarioTipo === 'admin') {
-      deleteHtml = `<td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>`;
-    } else {
-      deleteHtml = `<td></td>`;
-    }
+    let nomeTd, qtdAtualTd, qtdMinTd, qtdMaxTd;
 
-    row.innerHTML = `
-      <td>${produto.nome}</td>
-      <td>
+    if (usuarioTipo === 'admin') {
+      nomeTd = `<td><input type="text" value="${produto.nome}" onchange="atualizarCampo(${produto.id}, 'nome', this.value)" /></td>`;
+      qtdAtualTd = `
+        <td>
+          <div class="qty-controls">
+            <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
+            <input type="number" value="${produto.qtd_atual}" onchange="atualizarCampo(${produto.id}, 'qtd_atual', this.value)" />
+            <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
+          </div>
+        </td>`;
+      qtdMinTd = `<td><input type="number" value="${produto.qtd_minima}" onchange="atualizarCampo(${produto.id}, 'qtd_minima', this.value)" /></td>`;
+      qtdMaxTd = `<td><input type="number" value="${produto.qtd_maxima}" onchange="atualizarCampo(${produto.id}, 'qtd_maxima', this.value)" /></td>`;
+    } else {
+      nomeTd = `<td>${produto.nome}</td>`;
+      qtdAtualTd = `<td>
         <div class="qty-controls">
           <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
-          <input type="number" value="${produto.qtd_atual}" onchange="atualizarQuantidade(${produto.id}, this.value)" />
+          <input type="number" value="${produto.qtd_atual}" onchange="atualizarQuantidade(${produto.id}, this.value)" disabled />
           <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
         </div>
-      </td>
-      <td>${produto.qtd_minima}</td>
-      <td>${produto.qtd_maxima}</td>
+      </td>`;
+      qtdMinTd = `<td>${produto.qtd_minima}</td>`;
+      qtdMaxTd = `<td>${produto.qtd_maxima}</td>`;
+    }
+
+    const deleteHtml = usuarioTipo === 'admin'
+      ? `<td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>`
+      : `<td></td>`;
+
+    row.innerHTML = `
+      ${nomeTd}
+      ${qtdAtualTd}
+      ${qtdMinTd}
+      ${qtdMaxTd}
       <td class="status-${status.toLowerCase()}">${status}</td>
       ${deleteHtml}
     `;
+
     tbody.appendChild(row);
   });
 }
 
-function calcularStatus(qtdAtual, qtdMin, qtdMax) {
-  if (qtdAtual < qtdMin) return 'URGENTE';
-  if (qtdAtual > qtdMax) return 'EXCESSO';
-  return 'OK';
-}
-
-async function carregarProdutos() {
-  try {
-    const resposta = await fetch('/api/produtos');
-    const dados = await resposta.json();
-    produtos = dados;
-    mostrarProdutos(produtos);
-  } catch (error) {
-    alert('Erro ao carregar produtos: ' + error.message);
-  }
-}
-
-async function adicionarProduto() {
-  if (usuarioTipo !== 'admin') {
-    alert('Você não tem permissão para adicionar produtos.');
-    return;
-  }
-
-  const nome = document.getElementById('novoNome').value.trim();
-  const qtdAtual = parseInt(document.getElementById('novaQtd').value);
-  const qtdMin = parseInt(document.getElementById('qtdMin').value);
-  const qtdMax = parseInt(document.getElementById('qtdMax').value);
-
-  if (!nome || isNaN(qtdAtual) || isNaN(qtdMin) || isNaN(qtdMax)) {
-    alert('Preencha todos os campos corretamente.');
-    return;
-  }
-
-  const novoProduto = {
-    nome,
-    qtd_atual: qtdAtual,
-    qtd_minima: qtdMin,
-    qtd_maxima: qtdMax
-  };
-
-  try {
-    const res = await fetch('/api/produtos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(novoProduto)
-    });
-
-    if (res.ok) {
-      await carregarProdutos();
-      document.getElementById('novoNome').value = '';
-      document.getElementById('novaQtd').value = '';
-      document.getElementById('qtdMin').value = '';
-      document.getElementById('qtdMax').value = '';
-    } else {
-      alert('Erro ao adicionar produto.');
-    }
-  } catch (error) {
-    alert('Erro na conexão: ' + error.message);
-  }
-}
-
-async function atualizarQuantidade(id) {
-  const row = document.querySelector(`tr[data-id="${id}"]`);
-  const input = row.querySelector('input');
-  const novaQtd = parseInt(input.value);
-
+async function atualizarCampo(id, campo, valor) {
   const produto = produtos.find(p => p.id === id);
   if (!produto) return;
 
   const dados = {
-    qtd_atual: novaQtd,
+    nome: produto.nome,
+    qtd_atual: produto.qtd_atual,
     qtd_minima: produto.qtd_minima,
     qtd_maxima: produto.qtd_maxima
   };
 
+  if (campo === 'qtd_atual' || campo === 'qtd_minima' || campo === 'qtd_maxima') {
+    dados[campo] = parseInt(valor);
+  } else {
+    dados[campo] = valor;
+  }
+
   try {
     const res = await fetch(`/api/produtos/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dados)
     });
 
     if (res.ok) {
       await carregarProdutos();
     } else {
-      alert("Erro ao atualizar o produto.");
+      alert('Erro ao atualizar o produto.');
     }
   } catch (error) {
-    alert("Erro de rede ao atualizar o produto.");
+    alert('Erro na conexão ao atualizar o produto.');
   }
 }
+
 
 function alterarQuantidade(id, delta) {
   const row = document.querySelector(`tr[data-id="${id}"]`);

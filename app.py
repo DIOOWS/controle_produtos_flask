@@ -16,6 +16,12 @@ SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Log básico para monitorar acessos e endpoints
+@app.before_request
+def log_request_info():
+    user = session.get('user_id', 'Anônimo')
+    print(f"[{datetime.now().isoformat()}] Usuário: {user} - Acessou: {request.method} {request.path}")
+
 # Decorator para verificar se o usuário está logado
 def login_required(f):
     @wraps(f)
@@ -33,6 +39,28 @@ def admin_required(f):
             return jsonify({'error': 'Permissão negada'}), 403
         return f(*args, **kwargs)
     return decorated_function
+
+# NOVAS ROTAS para obter tipo e info do usuário
+@app.route('/api/usuario-tipo')
+@login_required
+def usuario_tipo():
+    return jsonify({'tipo': session.get('user_role', 'user')}), 200
+
+@app.route('/api/usuario-info')
+@login_required
+def usuario_info():
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'Usuário não autenticado'}), 401
+        response = supabase.table('usuarios').select('id, username, role, criado_em').eq('id', user_id).execute()
+        if response.data:
+            user_data = response.data[0]
+            return jsonify(user_data), 200
+        else:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/login')
 def login_page():
@@ -96,7 +124,7 @@ def login():
             return jsonify({'error': 'Senha incorreta'}), 401
 
         session['user_id'] = usuario['id']
-        session['user_role'] = usuario.get('role', 'user')  # Salva o role na sessão
+        session['user_role'] = usuario.get('role', 'user')
         return jsonify({'message': 'Login realizado com sucesso'}), 200
 
     except Exception as e:

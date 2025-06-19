@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Controle de Produtos</title>
+
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -29,6 +29,7 @@
       gap: 10px;
       flex-wrap: wrap;
       z-index: 1000;
+      color: white;
     }
 
     header img {
@@ -60,6 +61,16 @@
 
     #btnLogout:hover {
       background-color: #555;
+    }
+
+    #userInfo {
+      position: absolute;
+      right: 120px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      font-weight: bold;
+      user-select: none;
     }
 
     body {
@@ -195,6 +206,10 @@
         width: 24px;
         height: 24px;
       }
+      #userInfo {
+        right: 90px;
+        font-size: 14px;
+      }
     }
 
     @media (max-width: 480px) {
@@ -211,6 +226,11 @@
       header img {
         width: 140px;
       }
+      #userInfo {
+        position: static;
+        transform: none;
+        margin-top: 10px;
+      }
     }
   </style>
 </head>
@@ -218,6 +238,7 @@
 
 <header>
   <img src="{{ url_for('static', filename='logo-xodo.png') }}" alt="Logo Xodó" />
+  <div id="userInfo">Carregando usuário...</div>
   <button id="btnLogout">Logout</button>
 </header>
 
@@ -262,8 +283,49 @@
   <button onclick="exportarXLSX()">Exportar para Excel</button>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
   let produtos = [];
+  let usuarioTipo = 'user'; // padrão
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await carregarUsuarioInfo();
+    await carregarTipoUsuario();
+    await carregarProdutos();
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      const res = await fetch('/logout', { method: 'POST' });
+      if (res.ok) window.location.href = '/login';
+    });
+  });
+
+  async function carregarUsuarioInfo() {
+    try {
+      const res = await fetch('/api/usuario-info');
+      if (!res.ok) throw new Error('Não autorizado');
+      const data = await res.json();
+      const userInfoEl = document.getElementById('userInfo');
+      userInfoEl.textContent = `Usuário: ${data.username} | Papel: ${data.role}`;
+    } catch (err) {
+      console.error('Erro ao buscar info do usuário', err);
+      document.getElementById('userInfo').textContent = 'Usuário não autenticado';
+    }
+  }
+
+  async function carregarTipoUsuario() {
+    try {
+      const res = await fetch('/api/usuario-tipo');
+      const data = await res.json();
+      usuarioTipo = data.tipo || 'user';
+
+      if (usuarioTipo !== 'admin') {
+        document.querySelector('.add-product').style.display = 'none';
+        document.querySelectorAll('.delete-icon').forEach(el => el.style.display = 'none');
+      }
+    } catch (err) {
+      console.error('Erro ao buscar tipo do usuário', err);
+    }
+  }
 
   async function carregarProdutos() {
     const res = await fetch('/api/produtos');
@@ -288,25 +350,40 @@
       row.dataset.status = status;
       row.dataset.id = produto.id;
 
+      let controles = '';
+      if (usuarioTipo === 'admin') {
+        controles = `
+          <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
+          <input type="number" value="${produto.qtd_atual}" onchange="atualizarQuantidade(${produto.id})" />
+          <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
+        `;
+      } else {
+        controles = `
+          <button disabled>-</button>
+          <input type="number" value="${produto.qtd_atual}" disabled />
+          <button disabled>+</button>
+        `;
+      }
+
+      const deleteIcon = usuarioTipo === 'admin' ?
+        `<span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span>` :
+        '';
+
       row.innerHTML = `
         <td>${produto.nome}</td>
-        <td>
-          <div class="qty-controls">
-            <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
-            <input type="number" value="${produto.qtd_atual}" onchange="atualizarQuantidade(${produto.id})" />
-            <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
-          </div>
-        </td>
+        <td><div class="qty-controls">${controles}</div></td>
         <td>${produto.qtd_minima}</td>
         <td>${produto.qtd_maxima}</td>
         <td class="status-${status.toLowerCase()}">${status}</td>
-        <td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>
+        <td>${deleteIcon}</td>
       `;
       tbody.appendChild(row);
     });
   }
 
   async function atualizarQuantidade(id) {
+    if (usuarioTipo !== 'admin') return;
+
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const input = row.querySelector('input');
     const novaQtd = parseInt(input.value);
@@ -330,6 +407,8 @@
   }
 
   function alterarQuantidade(id, delta) {
+    if (usuarioTipo !== 'admin') return;
+
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const input = row.querySelector('input');
     let novaQtd = parseInt(input.value) + delta;
@@ -354,12 +433,16 @@
   }
 
   async function deletarProduto(id) {
+    if (usuarioTipo !== 'admin') return;
+
     if (!confirm('Tem certeza que deseja excluir este produto?')) return;
     const res = await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
     if (res.ok) carregarProdutos();
   }
 
   async function adicionarProduto() {
+    if (usuarioTipo !== 'admin') return;
+
     const nome = document.getElementById('novoNome').value.trim();
     const qtdAtual = parseInt(document.getElementById('novaQtd').value);
     const qtdMin = parseInt(document.getElementById('qtdMin').value);
@@ -412,15 +495,7 @@
     XLSX.utils.book_append_sheet(wb, ws, "Produtos");
     XLSX.writeFile(wb, "produtos.xlsx");
   }
-
-  document.getElementById('btnLogout').addEventListener('click', async () => {
-    const res = await fetch('/logout', { method: 'POST' });
-    if (res.ok) window.location.href = '/login';
-  });
-
-  document.addEventListener('DOMContentLoaded', carregarProdutos);
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 </body>
 </html>
