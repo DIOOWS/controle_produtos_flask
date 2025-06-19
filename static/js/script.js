@@ -189,10 +189,13 @@ function buscarProduto() {
   mostrarProdutos(filtrados);
 }
 
-// Exportar CSV
-function exportarCSV() {
-  let csv = 'Nome,Qtd Atual,Qtd Mínima,Qtd Máxima,Status\n';
+// Exportar xls
+function exportarXLSX() {
+  const dados = [];
   const rows = document.querySelectorAll('#tabelaProdutos tbody tr');
+
+  // Cabeçalho
+  dados.push(["Nome", "Qtd Atual", "Qtd Mínima", "Qtd Máxima", "Status"]);
 
   rows.forEach(row => {
     const cols = row.querySelectorAll('td');
@@ -202,12 +205,13 @@ function exportarCSV() {
     const qtdMax = cols[3].textContent;
     const status = cols[4].textContent;
 
-    csv += `${nome},${qtdAtual},${qtdMin},${qtdMax},${status}\n`;
+    dados.push([nome, qtdAtual, qtdMin, qtdMax, status]);
   });
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.setAttribute('href', URL.createObjectURL(blob));
-  link.setAttribute('download', 'produtos.csv');
-  link.click();
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(dados);
+  XLSX.utils.book_append_sheet(wb, ws, "Produtos");
+  XLSX.writeFile(wb, "produtos.xlsx");
 }
+
+

@@ -141,13 +141,14 @@
 <body>
 
 <header>
-  <img src="https://cdn-icons-png.flaticon.com/512/2554/2554971.png" alt="Logo" />
-  <h1>XODÓ</h1>
+  <img src="{{ url_for('static', filename='logo-xodo.png') }}" alt="Logo Xodó" style="width: 180px; height: auto;" />
+
   <button id="btnLogout">Logout</button>
 </header>
 
 <h2>Controle de Produtos</h2>
 
+<!-- filtros -->
 <div class="filters">
   <button onclick="filtrarStatus('URGENTE')">Urgente</button>
   <button onclick="filtrarStatus('EXCESSO')">Excesso</button>
@@ -155,10 +156,12 @@
   <button onclick="mostrarTodos()">Todos</button>
 </div>
 
+<!-- busca -->
 <div class="search">
   <input type="text" id="busca" placeholder="Buscar produto..." onkeyup="buscarProduto()" />
 </div>
 
+<!-- formulário de novo produto -->
 <div class="add-product">
   <input type="text" id="novoNome" placeholder="Nome do produto">
   <input type="number" id="novaQtd" placeholder="Qtd Atual">
@@ -167,6 +170,7 @@
   <button onclick="adicionarProduto()">Adicionar</button>
 </div>
 
+<!-- tabela -->
 <table id="tabelaProdutos">
   <thead>
     <tr>
@@ -181,8 +185,9 @@
   <tbody></tbody>
 </table>
 
+<!-- botão de exportação -->
 <div class="export-button">
-  <button onclick="exportarCSV()">Exportar CSV</button>
+  <button onclick="exportarXLSX()">Exportar para Excel</button>
 </div>
 
 <script>
@@ -225,7 +230,6 @@
         <td class="status-${status.toLowerCase()}">${status}</td>
         <td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>
       `;
-
       tbody.appendChild(row);
     });
   }
@@ -234,7 +238,6 @@
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const input = row.querySelector('input');
     const novaQtd = parseInt(input.value);
-
     const produto = produtos.find(p => p.id === id);
     if (!produto) return;
 
@@ -317,9 +320,10 @@
     }
   }
 
-  function exportarCSV() {
-    let csv = 'Nome,Qtd Atual,Qtd Mínima,Qtd Máxima,Status\n';
+  function exportarXLSX() {
+    const dados = [];
     const rows = document.querySelectorAll('#tabelaProdutos tbody tr');
+    dados.push(["Nome", "Qtd Atual", "Qtd Mínima", "Qtd Máxima", "Status"]);
 
     rows.forEach(row => {
       const cols = row.querySelectorAll('td');
@@ -328,26 +332,23 @@
       const qtdMin = cols[2].textContent;
       const qtdMax = cols[3].textContent;
       const status = cols[4].textContent;
-
-      csv += `${nome},${qtdAtual},${qtdMin},${qtdMax},${status}\n`;
+      dados.push([nome, qtdAtual, qtdMin, qtdMax, status]);
     });
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.setAttribute('href', URL.createObjectURL(blob));
-    link.setAttribute('download', 'produtos.csv');
-    link.click();
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(dados);
+    XLSX.utils.book_append_sheet(wb, ws, "Produtos");
+    XLSX.writeFile(wb, "produtos.xlsx");
   }
 
   document.getElementById('btnLogout').addEventListener('click', async () => {
     const res = await fetch('/logout', { method: 'POST' });
-    if (res.ok) {
-      window.location.href = '/login';
-    }
+    if (res.ok) window.location.href = '/login';
   });
 
   document.addEventListener('DOMContentLoaded', carregarProdutos);
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 </body>
 </html>
