@@ -1,8 +1,8 @@
 let produtos = [];
-let filtroCategoria = 'todos';
+let usuarioTipo = 'operador'; // padrão pra segurar o tipo
 
-// Ao carregar a página
 document.addEventListener('DOMContentLoaded', async () => {
+  await carregarTipoUsuario();
   await carregarProdutos();
 
   const logoutBtn = document.getElementById('btnLogout');
@@ -22,19 +22,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// Buscar produtos do backend
-async function carregarProdutos() {
+async function carregarTipoUsuario() {
   try {
-    const resposta = await fetch('/api/produtos');
-    const dados = await resposta.json();
-    produtos = dados;
-    mostrarProdutos(produtos);
+    const res = await fetch('/api/usuario-tipo');
+    if (res.ok) {
+      const data = await res.json();
+      usuarioTipo = data.tipo || 'operador';
+      aplicarPermissoes();
+    } else {
+      alert('Erro ao obter tipo do usuário.');
+    }
   } catch (error) {
-    alert('Erro ao carregar produtos: ' + error.message);
+    alert('Erro de rede ao obter tipo do usuário.');
   }
 }
 
-// Exibir produtos na tabela
+function aplicarPermissoes() {
+  // Esconder botão adicionar se não for admin
+  const btnAdicionar = document.querySelector('.add-product button');
+  if (usuarioTipo !== 'admin' && btnAdicionar) {
+    btnAdicionar.style.display = 'none';
+  }
+
+  // Quando mostrar produtos, esconder ícone delete se não for admin
+  // Vamos garantir que a função mostrarProdutos considere isso
+}
+
+// A função mostrarProdutos já chama aplicarPermissoes para esconder delete se preciso
 function mostrarProdutos(lista) {
   const tbody = document.querySelector('#tabelaProdutos tbody');
   tbody.innerHTML = '';
@@ -44,6 +58,13 @@ function mostrarProdutos(lista) {
     const row = document.createElement('tr');
     row.dataset.status = status;
     row.dataset.id = produto.id;
+
+    let deleteHtml = '';
+    if (usuarioTipo === 'admin') {
+      deleteHtml = `<td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>`;
+    } else {
+      deleteHtml = `<td></td>`;
+    }
 
     row.innerHTML = `
       <td>${produto.nome}</td>
@@ -57,22 +78,35 @@ function mostrarProdutos(lista) {
       <td>${produto.qtd_minima}</td>
       <td>${produto.qtd_maxima}</td>
       <td class="status-${status.toLowerCase()}">${status}</td>
-      <td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>
+      ${deleteHtml}
     `;
-
     tbody.appendChild(row);
   });
 }
 
-// Cálculo do status
 function calcularStatus(qtdAtual, qtdMin, qtdMax) {
   if (qtdAtual < qtdMin) return 'URGENTE';
   if (qtdAtual > qtdMax) return 'EXCESSO';
   return 'OK';
 }
 
-// Adicionar novo produto
+async function carregarProdutos() {
+  try {
+    const resposta = await fetch('/api/produtos');
+    const dados = await resposta.json();
+    produtos = dados;
+    mostrarProdutos(produtos);
+  } catch (error) {
+    alert('Erro ao carregar produtos: ' + error.message);
+  }
+}
+
 async function adicionarProduto() {
+  if (usuarioTipo !== 'admin') {
+    alert('Você não tem permissão para adicionar produtos.');
+    return;
+  }
+
   const nome = document.getElementById('novoNome').value.trim();
   const qtdAtual = parseInt(document.getElementById('novaQtd').value);
   const qtdMin = parseInt(document.getElementById('qtdMin').value);
@@ -84,11 +118,11 @@ async function adicionarProduto() {
   }
 
   const novoProduto = {
-  nome,
-  qtd_atual: qtdAtual,
-  qtd_minima: qtdMin,
-  qtd_maxima: qtdMax
-};
+    nome,
+    qtd_atual: qtdAtual,
+    qtd_minima: qtdMin,
+    qtd_maxima: qtdMax
+  };
 
   try {
     const res = await fetch('/api/produtos', {
@@ -111,7 +145,6 @@ async function adicionarProduto() {
   }
 }
 
-// Atualizar quantidade
 async function atualizarQuantidade(id) {
   const row = document.querySelector(`tr[data-id="${id}"]`);
   const input = row.querySelector('input');
@@ -145,7 +178,6 @@ async function atualizarQuantidade(id) {
   }
 }
 
-// Botões + e -
 function alterarQuantidade(id, delta) {
   const row = document.querySelector(`tr[data-id="${id}"]`);
   const input = row.querySelector('input');
@@ -155,8 +187,12 @@ function alterarQuantidade(id, delta) {
   atualizarQuantidade(id);
 }
 
-// Deletar produto
 async function deletarProduto(id) {
+  if (usuarioTipo !== 'admin') {
+    alert('Você não tem permissão para deletar produtos.');
+    return;
+  }
+
   if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
   try {
@@ -172,7 +208,6 @@ async function deletarProduto(id) {
   }
 }
 
-// Filtro por status
 function filtrarStatus(status) {
   const filtrados = produtos.filter(p => calcularStatus(p.qtd_atual, p.qtd_minima, p.qtd_maxima) === status);
   mostrarProdutos(filtrados);
@@ -182,19 +217,16 @@ function mostrarTodos() {
   mostrarProdutos(produtos);
 }
 
-// Busca por nome
 function buscarProduto() {
   const termo = document.getElementById('busca').value.toLowerCase();
   const filtrados = produtos.filter(p => p.nome.toLowerCase().includes(termo));
   mostrarProdutos(filtrados);
 }
 
-// Exportar xls
 function exportarXLSX() {
   const dados = [];
   const rows = document.querySelectorAll('#tabelaProdutos tbody tr');
 
-  // Cabeçalho
   dados.push(["Nome", "Qtd Atual", "Qtd Mínima", "Qtd Máxima", "Status"]);
 
   rows.forEach(row => {
@@ -213,5 +245,3 @@ function exportarXLSX() {
   XLSX.utils.book_append_sheet(wb, ws, "Produtos");
   XLSX.writeFile(wb, "produtos.xlsx");
 }
-
-

@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 import traceback
+from functools import wraps
 
 load_dotenv()
 
@@ -14,6 +15,24 @@ app.secret_key = os.environ.get('SECRET_KEY', 'minhasecreta')
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Decorator para verificar se o usuário está logado
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Não autorizado'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Decorator para verificar se o usuário é admin
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_role' not in session or session['user_role'] != 'admin':
+            return jsonify({'error': 'Permissão negada'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/login')
 def login_page():
@@ -46,7 +65,8 @@ def cadastrar_usuario():
         novo_usuario = {
             'username': username,
             'senha': senha_hash,
-            'criado_em': datetime.now().isoformat()
+            'criado_em': datetime.now().isoformat(),
+            'role': 'user'  # por padrão usuário comum, se quiser pode mudar para admin manualmente no banco
         }
         supabase.table('usuarios').insert(novo_usuario).execute()
         return jsonify({'message': 'Usuário criado com sucesso'}), 201
@@ -76,21 +96,20 @@ def login():
             return jsonify({'error': 'Senha incorreta'}), 401
 
         session['user_id'] = usuario['id']
+        session['user_role'] = usuario.get('role', 'user')  # Salva o role na sessão
         return jsonify({'message': 'Login realizado com sucesso'}), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/')
+@login_required
 def home():
-    if 'user_id' not in session:
-        return redirect(url_for('login_page'))
     return render_template('index.html')
 
 @app.route('/api/produtos', methods=['GET'])
+@login_required
 def get_produtos():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Não autorizado'}), 401
     try:
         response = supabase.table('produtos').select('*').order('id', desc=True).execute()
         return jsonify(response.data)
@@ -98,6 +117,8 @@ def get_produtos():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/produtos', methods=['POST'])
+@login_required
+@admin_required
 def adicionar_produto():
     data = request.get_json()
 
@@ -118,10 +139,9 @@ def adicionar_produto():
         return jsonify({'erro': str(e)}), 500
 
 @app.route('/api/produtos/<int:id>', methods=['PUT'])
+@login_required
+@admin_required
 def update_produto(id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Não autorizado'}), 401
-
     try:
         data = request.get_json()
         if not data:
@@ -153,9 +173,9 @@ def update_produto(id):
         return jsonify({'error': 'Erro interno no servidor', 'detalhes': str(e)}), 500
 
 @app.route('/api/produtos/<int:id>', methods=['DELETE'])
+@login_required
+@admin_required
 def delete_produto(id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Não autorizado'}), 401
     try:
         supabase.table('produtos').delete().eq('id', id).execute()
         return jsonify({'success': True}), 200
