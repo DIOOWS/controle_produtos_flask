@@ -4,6 +4,7 @@ import hashlib
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+import traceback
 
 load_dotenv()
 
@@ -97,48 +98,59 @@ def get_produtos():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/produtos', methods=['POST'])
-def add_produto():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Não autorizado'}), 401
-
+def adicionar_produto():
     data = request.get_json()
-    required_fields = ['nome', 'qtd_atual', 'qtd_minima', 'qtd_maxima']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Campos faltando'}), 400
 
-    new_product = {
-        'nome': data['nome'],
-        'qtd_atual': int(data['qtd_atual']),
-        'qtd_minima': int(data['qtd_minima']),
-        'qtd_maxima': int(data['qtd_maxima']),
-        'criado_em': datetime.now().isoformat()
-    }
+    campos_obrigatorios = ['nome', 'qtd_atual', 'qtd_minima', 'qtd_maxima']
+    if not all(campo in data for campo in campos_obrigatorios):
+        return jsonify({'erro': 'Campos obrigatórios faltando.'}), 400
 
+    try:
+        novo_produto = {
+            'nome': data['nome'],
+            'qtd_atual': int(data['qtd_atual']),
+            'qtd_minima': int(data['qtd_minima']),
+            'qtd_maxima': int(data['qtd_maxima'])
+        }
+        supabase.table('produtos').insert(novo_produto).execute()
+        return jsonify({'mensagem': 'Produto adicionado com sucesso.'}), 201
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
 
 @app.route('/api/produtos/<int:id>', methods=['PUT'])
 def update_produto(id):
     if 'user_id' not in session:
         return jsonify({'error': 'Não autorizado'}), 401
 
-    data = request.get_json()
     try:
-        qtd_atual = data.get('qtdAtual')
-        qtd_minima = data.get('qtdMin')
-        qtd_maxima = data.get('qtdMax')
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados inválidos ou vazios'}), 400
 
-        if any(v is None for v in [qtd_atual, qtd_minima, qtd_maxima]):
-            return jsonify({'error': 'Valores ausentes'}), 400
+        updates = {}
 
-        updates = {
-            'qtd_atual': int(qtd_atual),
-            'qtd_minima': int(qtd_minima),
-            'qtd_maxima': int(qtd_maxima),
-            'atualizado_em': datetime.now().isoformat()
-        }
+        if 'qtd_atual' in data:
+            updates['qtd_atual'] = int(data['qtd_atual'])
+        if 'qtd_minima' in data:
+            updates['qtd_minima'] = int(data['qtd_minima'])
+        if 'qtd_maxima' in data:
+            updates['qtd_maxima'] = int(data['qtd_maxima'])
+
+        if not updates:
+            return jsonify({'error': 'Nenhum campo para atualizar'}), 400
+
+        updates['atualizado_em'] = datetime.now().isoformat()
+
         response = supabase.table('produtos').update(updates).eq('id', id).execute()
+
+        if not response.data:
+            return jsonify({'error': 'Produto não encontrado ou não atualizado'}), 404
+
         return jsonify(response.data[0])
+
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(traceback.format_exc())
+        return jsonify({'error': 'Erro interno no servidor', 'detalhes': str(e)}), 500
 
 @app.route('/api/produtos/<int:id>', methods=['DELETE'])
 def delete_produto(id):

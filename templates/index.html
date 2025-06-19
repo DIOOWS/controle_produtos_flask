@@ -86,7 +86,6 @@
       text-align: center;
     }
 
-    /* Botões + e - */
     .qty-controls {
       display: flex;
       align-items: center;
@@ -186,44 +185,43 @@
   <button onclick="exportarCSV()">Exportar CSV</button>
 </div>
 
-<script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
 <script>
-  // Logout (já implementado no seu JS, mas deixei aqui para garantir)
-  document.getElementById('btnLogout').addEventListener('click', async () => {
-    try {
-      const res = await fetch('/logout', { method: 'POST' }); // conforme seu JS corrigido
-      if (res.ok) {
-        window.location.href = '/login';
-      } else {
-        alert('Erro ao fazer logout.');
-      }
-    } catch (e) {
-      alert('Erro na conexão.');
-    }
-  });
+  let produtos = [];
 
-  // Substituir a função mostrarProdutos do seu JS para inserir os botões + e -
-  function mostrarProdutos(produtos) {
+  async function carregarProdutos() {
+    const res = await fetch('/api/produtos');
+    const dados = await res.json();
+    produtos = dados;
+    mostrarProdutos(produtos);
+  }
+
+  function calcularStatus(qtd, min, max) {
+    if (qtd < min) return 'URGENTE';
+    if (qtd > max) return 'EXCESSO';
+    return 'OK';
+  }
+
+  function mostrarProdutos(lista) {
     const tbody = document.querySelector('#tabelaProdutos tbody');
     tbody.innerHTML = '';
 
-    produtos.forEach(produto => {
-      const status = calcularStatus(produto.qtdAtual, produto.qtdMin, produto.qtdMax);
+    lista.forEach(produto => {
+      const status = calcularStatus(produto.qtd_atual, produto.qtd_minima, produto.qtd_maxima);
       const row = document.createElement('tr');
       row.dataset.status = status;
+      row.dataset.id = produto.id;
 
       row.innerHTML = `
         <td>${produto.nome}</td>
         <td>
           <div class="qty-controls">
-            <button onclick="alterarQuantidade(this, ${produto.id}, -1)">-</button>
-            <input type="number" value="${produto.qtdAtual}" onchange="atualizarQuantidade(${produto.id}, this.value)" />
-            <button onclick="alterarQuantidade(this, ${produto.id}, 1)">+</button>
+            <button onclick="alterarQuantidade(${produto.id}, -1)">-</button>
+            <input type="number" value="${produto.qtd_atual}" onchange="atualizarQuantidade(${produto.id})" />
+            <button onclick="alterarQuantidade(${produto.id}, 1)">+</button>
           </div>
         </td>
-        <td>${produto.qtdMin}</td>
-        <td>${produto.qtdMax}</td>
+        <td>${produto.qtd_minima}</td>
+        <td>${produto.qtd_maxima}</td>
         <td class="status-${status.toLowerCase()}">${status}</td>
         <td><span class="delete-icon" onclick="deletarProduto(${produto.id})">🗑️</span></td>
       `;
@@ -232,32 +230,123 @@
     });
   }
 
-  // Função auxiliar para os botões + e -
-  async function alterarQuantidade(id, delta) {
-    try {
-      // Buscar o input da linha correspondente para pegar valor atual
-      const row = [...document.querySelectorAll('#tabelaProdutos tbody tr')].find(r => {
-        return r.querySelector('.qty-controls button') && r.querySelector('.qty-controls button').onclick.toString().includes(`alterarQuantidade(${id}`);
-      });
-      // Como encontrar a linha pelo id pode ser complicado por onclick string, melhor fazer diferente:
-      // Vamos buscar o input por um seletor direto
-      const input = [...document.querySelectorAll('#tabelaProdutos tbody tr')].find(tr => {
-        const onclicks = tr.querySelectorAll('button');
-        return [...onclicks].some(btn => btn.getAttribute('onclick')?.includes(`alterarQuantidade(${id}`));
-      })?.querySelector('input');
+  async function atualizarQuantidade(id) {
+    const row = document.querySelector(`tr[data-id="${id}"]`);
+    const input = row.querySelector('input');
+    const novaQtd = parseInt(input.value);
 
-      if (!input) return;
+    const produto = produtos.find(p => p.id === id);
+    if (!produto) return;
 
-      let novaQtd = parseInt(input.value) + delta;
-      if (novaQtd < 0) novaQtd = 0; // evitar número negativo
+    const dados = {
+      nome: produto.nome,
+      qtd_atual: novaQtd,
+      qtd_minima: produto.qtd_minima,
+      qtd_maxima: produto.qtd_maxima
+    };
 
-      input.value = novaQtd;
+    const res = await fetch(`/api/produtos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    });
 
-      await atualizarQuantidade(id, novaQtd);
-    } catch (error) {
-      alert(error.message);
+    if (res.ok) carregarProdutos();
+  }
+
+  function alterarQuantidade(id, delta) {
+    const row = document.querySelector(`tr[data-id="${id}"]`);
+    const input = row.querySelector('input');
+    let novaQtd = parseInt(input.value) + delta;
+    if (novaQtd < 0) novaQtd = 0;
+    input.value = novaQtd;
+    atualizarQuantidade(id);
+  }
+
+  function buscarProduto() {
+    const termo = document.getElementById('busca').value.toLowerCase();
+    const filtrados = produtos.filter(p => p.nome.toLowerCase().includes(termo));
+    mostrarProdutos(filtrados);
+  }
+
+  function mostrarTodos() {
+    mostrarProdutos(produtos);
+  }
+
+  function filtrarStatus(status) {
+    const filtrados = produtos.filter(p => calcularStatus(p.qtd_atual, p.qtd_minima, p.qtd_maxima) === status);
+    mostrarProdutos(filtrados);
+  }
+
+  async function deletarProduto(id) {
+    if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+    const res = await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
+    if (res.ok) carregarProdutos();
+  }
+
+  async function adicionarProduto() {
+    const nome = document.getElementById('novoNome').value.trim();
+    const qtdAtual = parseInt(document.getElementById('novaQtd').value);
+    const qtdMin = parseInt(document.getElementById('qtdMin').value);
+    const qtdMax = parseInt(document.getElementById('qtdMax').value);
+
+    if (!nome || isNaN(qtdAtual) || isNaN(qtdMin) || isNaN(qtdMax)) {
+      alert('Preencha todos os campos corretamente.');
+      return;
+    }
+
+    const novoProduto = {
+      nome,
+      qtd_atual: qtdAtual,
+      qtd_minima: qtdMin,
+      qtd_maxima: qtdMax
+    };
+
+    const res = await fetch('/api/produtos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novoProduto)
+    });
+
+    if (res.ok) {
+      document.getElementById('novoNome').value = '';
+      document.getElementById('novaQtd').value = '';
+      document.getElementById('qtdMin').value = '';
+      document.getElementById('qtdMax').value = '';
+      carregarProdutos();
     }
   }
+
+  function exportarCSV() {
+    let csv = 'Nome,Qtd Atual,Qtd Mínima,Qtd Máxima,Status\n';
+    const rows = document.querySelectorAll('#tabelaProdutos tbody tr');
+
+    rows.forEach(row => {
+      const cols = row.querySelectorAll('td');
+      const nome = cols[0].textContent;
+      const qtdAtual = cols[1].querySelector('input')?.value || '';
+      const qtdMin = cols[2].textContent;
+      const qtdMax = cols[3].textContent;
+      const status = cols[4].textContent;
+
+      csv += `${nome},${qtdAtual},${qtdMin},${qtdMax},${status}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.setAttribute('href', URL.createObjectURL(blob));
+    link.setAttribute('download', 'produtos.csv');
+    link.click();
+  }
+
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    const res = await fetch('/logout', { method: 'POST' });
+    if (res.ok) {
+      window.location.href = '/login';
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', carregarProdutos);
 </script>
 
 </body>

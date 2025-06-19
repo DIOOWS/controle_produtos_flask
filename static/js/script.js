@@ -1,7 +1,7 @@
 let produtos = [];
 let filtroCategoria = 'todos';
 
-// Ao carregar a página, pega os produtos do backend
+// Ao carregar a página
 document.addEventListener('DOMContentLoaded', async () => {
   await carregarProdutos();
 
@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function carregarProdutos() {
   try {
     const resposta = await fetch('/api/produtos');
-    produtos = await resposta.json();
+    const dados = await resposta.json();
+    produtos = dados;
     mostrarProdutos(produtos);
   } catch (error) {
     alert('Erro ao carregar produtos: ' + error.message);
@@ -84,11 +85,10 @@ async function adicionarProduto() {
 
   const novoProduto = {
   nome,
-  qtdAtual: qtdAtual,  // observe a capitalização
-  qtdMin: qtdMin,
-  qtdMax: qtdMax
+  qtd_atual: qtdAtual,
+  qtd_minima: qtdMin,
+  qtd_maxima: qtdMax
 };
-
 
   try {
     const res = await fetch('/api/produtos', {
@@ -113,52 +113,46 @@ async function adicionarProduto() {
 
 // Atualizar quantidade
 async function atualizarQuantidade(id) {
-    const linha = document.querySelector(`#produto-${id}`);
-    const qtdAtual = parseInt(linha.querySelector('.qtd-atual').value);
-    const qtdMin = parseInt(linha.querySelector('.qtd-min').value);
-    const qtdMax = parseInt(linha.querySelector('.qtd-max').value);
+  const row = document.querySelector(`tr[data-id="${id}"]`);
+  const input = row.querySelector('input');
+  const novaQtd = parseInt(input.value);
 
-    if (isNaN(qtdAtual) || isNaN(qtdMin) || isNaN(qtdMax)) {
-        alert("Valores inválidos! Preencha todos os campos.");
-        return;
+  const produto = produtos.find(p => p.id === id);
+  if (!produto) return;
+
+  const dados = {
+    qtd_atual: novaQtd,
+    qtd_minima: produto.qtd_minima,
+    qtd_maxima: produto.qtd_maxima
+  };
+
+  try {
+    const res = await fetch(`/api/produtos/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(dados)
+    });
+
+    if (res.ok) {
+      await carregarProdutos();
+    } else {
+      alert("Erro ao atualizar o produto.");
     }
-
-    const dados = {
-        qtdAtual,
-        qtdMin,
-        qtdMax
-    };
-
-    try {
-        const res = await fetch(`/api/produtos/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(dados)
-        });
-
-        if (!res.ok) {
-            const erro = await res.text();
-            console.error("Erro ao atualizar:", erro);
-            alert("Erro ao atualizar o produto.");
-        }
-    } catch (error) {
-        console.error("Erro de rede:", error);
-        alert("Erro de rede ao atualizar o produto.");
-    }
+  } catch (error) {
+    alert("Erro de rede ao atualizar o produto.");
+  }
 }
 
-
-
-// Alterar quantidade com botão + e -
+// Botões + e -
 function alterarQuantidade(id, delta) {
   const row = document.querySelector(`tr[data-id="${id}"]`);
   const input = row.querySelector('input');
   let novaQtd = parseInt(input.value) + delta;
   if (novaQtd < 0) novaQtd = 0;
   input.value = novaQtd;
-  atualizarQuantidade(id, novaQtd);
+  atualizarQuantidade(id);
 }
 
 // Deletar produto
