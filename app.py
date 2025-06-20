@@ -16,13 +16,11 @@ SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Log básico para monitorar acessos e endpoints
 @app.before_request
 def log_request_info():
     user = session.get('user_id', 'Anônimo')
     print(f"[{datetime.now().isoformat()}] Usuário: {user} - Acessou: {request.method} {request.path}")
 
-# Decorator para verificar se o usuário está logado
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -31,7 +29,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Decorator para verificar se o usuário é admin
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -40,7 +37,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# NOVAS ROTAS para obter tipo e info do usuário
 @app.route('/api/usuario-tipo')
 @login_required
 def usuario_tipo():
@@ -55,10 +51,8 @@ def usuario_info():
             return jsonify({'error': 'Usuário não autenticado'}), 401
         response = supabase.table('usuarios').select('id, username, role, criado_em').eq('id', user_id).execute()
         if response.data:
-            user_data = response.data[0]
-            return jsonify(user_data), 200
-        else:
-            return jsonify({'error': 'Usuário não encontrado'}), 404
+            return jsonify(response.data[0]), 200
+        return jsonify({'error': 'Usuário não encontrado'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -88,13 +82,12 @@ def cadastrar_usuario():
         return jsonify({'error': 'Usuário já existe'}), 400
 
     senha_hash = hashlib.sha256(password.encode()).hexdigest()
-
     try:
         novo_usuario = {
             'username': username,
             'senha': senha_hash,
             'criado_em': datetime.now().isoformat(),
-            'role': 'user'  # por padrão usuário comum, se quiser pode mudar para admin manualmente no banco
+            'role': 'user'
         }
         supabase.table('usuarios').insert(novo_usuario).execute()
         return jsonify({'message': 'Usuário criado com sucesso'}), 201
@@ -126,7 +119,6 @@ def login():
         session['user_id'] = usuario['id']
         session['user_role'] = usuario.get('role', 'user')
         return jsonify({'message': 'Login realizado com sucesso'}), 200
-
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -149,7 +141,6 @@ def get_produtos():
 @admin_required
 def adicionar_produto():
     data = request.get_json()
-
     campos_obrigatorios = ['nome', 'qtd_atual', 'qtd_minima', 'qtd_maxima']
     if not all(campo in data for campo in campos_obrigatorios):
         return jsonify({'erro': 'Campos obrigatórios faltando.'}), 400
@@ -176,7 +167,6 @@ def update_produto(id):
             return jsonify({'error': 'Dados inválidos ou vazios'}), 400
 
         updates = {}
-
         if 'qtd_atual' in data:
             updates['qtd_atual'] = int(data['qtd_atual'])
         if 'qtd_minima' in data:
@@ -188,14 +178,12 @@ def update_produto(id):
             return jsonify({'error': 'Nenhum campo para atualizar'}), 400
 
         updates['atualizado_em'] = datetime.now().isoformat()
-
         response = supabase.table('produtos').update(updates).eq('id', id).execute()
 
         if not response.data:
             return jsonify({'error': 'Produto não encontrado ou não atualizado'}), 404
 
         return jsonify(response.data[0])
-
     except Exception as e:
         print(traceback.format_exc())
         return jsonify({'error': 'Erro interno no servidor', 'detalhes': str(e)}), 500
@@ -219,5 +207,6 @@ def logout():
 def health():
     return jsonify({'status': 'healthy'}), 200
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+# ⛔ Removido app.run() para compatibilidade com Gunicorn
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=5000, debug=True)
