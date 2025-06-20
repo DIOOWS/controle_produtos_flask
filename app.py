@@ -25,7 +25,9 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'error': 'Não autorizado'}), 401
+            if request.path.startswith('/api'):
+                return jsonify({'error': 'Não autorizado'}), 401
+            return redirect(url_for('login_page'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -54,7 +56,6 @@ def usuario_info():
             return jsonify(response.data[0]), 200
         return jsonify({'error': 'Usuário não encontrado'}), 404
     except Exception as e:
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/login')
@@ -93,7 +94,6 @@ def cadastrar_usuario():
         supabase.table('usuarios').insert(novo_usuario).execute()
         return jsonify({'message': 'Usuário criado com sucesso'}), 201
     except Exception as e:
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/login', methods=['POST'])
@@ -122,7 +122,6 @@ def login():
         session['user_role'] = usuario.get('role', 'user')
         return jsonify({'message': 'Login realizado com sucesso'}), 200
     except Exception as e:
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/')
@@ -134,10 +133,9 @@ def home():
 @login_required
 def get_produtos():
     try:
-        response = supabase.table('produtos').select('*').execute()  # <-- Removido o .order()
+        response = supabase.table('produtos').select('*').order('id', desc=True).execute()
         return jsonify(response.data)
     except Exception as e:
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/produtos', methods=['POST'])
@@ -159,7 +157,6 @@ def adicionar_produto():
         supabase.table('produtos').insert(novo_produto).execute()
         return jsonify({'mensagem': 'Produto adicionado com sucesso.'}), 201
     except Exception as e:
-        print(traceback.format_exc())
         return jsonify({'erro': str(e)}), 500
 
 @app.route('/api/produtos/<int:id>', methods=['PUT'])
@@ -201,7 +198,6 @@ def delete_produto(id):
         supabase.table('produtos').delete().eq('id', id).execute()
         return jsonify({'success': True}), 200
     except Exception as e:
-        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/logout', methods=['POST'])
@@ -212,3 +208,7 @@ def logout():
 @app.route('/health')
 def health():
     return jsonify({'status': 'healthy'}), 200
+
+# ⛔ Removido app.run() para compatibilidade com Gunicorn
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=5000, debug=True)
